@@ -52,7 +52,7 @@ _printRAXLoop:
 _printRAXLoop2:
 	mov rcx, [digitSpacePos]
 
-	mov rax, 1
+	mov rax, SYS_write
 	mov rdi, 1
 	mov rsi, rcx
 	mov rdx, 1
