@@ -9,7 +9,7 @@ MANPREFIX = ${PREFIX}/share/man
 
 # flags
 AFLAGS  = -f elf64 -w+all -D$$(uname)
-LFLAGS  = -m elf_x86_64 -no-pie
+LFLAGS  = -m elf_x86_64 -s -no-pie
 
 # compiler and linker
 ASM  = nasm

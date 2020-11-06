@@ -8,61 +8,33 @@ BITS 64
 CHECK_OPENBSD
 
 section .bss
-	digitSpace: resb 100
-	digitSpacePos: resb 8
-	current_time: resb 12
+	timestamp: resb 12
+	julian: resb 12
+	equation_of_time: resb 12
+	res_char: resb 1
+	res_hour: resb 2
+	res_min: resb 2
+section .rodata
+	julian_1970: dq 0x41429ec5c0000000 ; double 2440587.5
+	sec_in_day: dq 0x40f5180000000000 ; double 86400
 
 section .text
 	global _start
+	extern _printRAX
 
 _start:
-	mov rax, SYS_gettimeofday
-	mov rdi, current_time
-	mov rsi, rsi
-	syscall
+; get_timestamp:
+	mov rax, SYS_gettimeofday ;sys_gettimeofday(
+	mov rdi, timestamp        ;struct timeval *tv,
+	mov rsi, rsi              ;struct timezone* tz
+	syscall                   ;)
 
-	mov rax, [current_time]
+; calc_julian:
+	mov rax, [timestamp]   ; mov value of timestamp in rax
+	mov rbx, sec_in_day    ; rbx = SEC_IN_DAY
+	div rbx                ; timestamp / SEC_IN_DAY
+	add rax, 2440587
+	mov [julian], rax      ; save result of division in julian
 
-	call _printRAX
+	call _printRAX ;util.s
 	EEXIT EXIT_SUCCESS
-
-_printRAX:
-	mov rcx, digitSpace
-	mov rbx, 10
-	mov [rcx], rbx
-	inc rcx
-	mov [digitSpacePos], rcx
-
-_printRAXLoop:
-	mov rdx, 0
-	mov rbx, 10
-	div rbx
-	push rax
-	add rdx, 48
-
-	mov rcx, [digitSpacePos]
-	mov [rcx], dl
-	inc rcx
-	mov [digitSpacePos], rcx
-	
-	pop rax
-	cmp rax, 0
-	jne _printRAXLoop
-
-_printRAXLoop2:
-	mov rcx, [digitSpacePos]
-
-	mov rax, SYS_write
-	mov rdi, 1
-	mov rsi, rcx
-	mov rdx, 1
-	syscall
-
-	mov rcx, [digitSpacePos]
-	dec rcx
-	mov [digitSpacePos], rcx
-
-	cmp rcx, digitSpace
-	jge _printRAXLoop2
-
-	ret

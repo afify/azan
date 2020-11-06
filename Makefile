@@ -4,7 +4,7 @@
 include config.mk
 
 BIN = azan-nasm
-SRC = ${BIN}.s
+SRC = ${BIN}.s util.s
 OBJ = ${SRC:.s=.o}
 
 all: options ${BIN}
