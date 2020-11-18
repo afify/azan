@@ -5,14 +5,15 @@
 BITS 64
 %include "syscalls.s"
 %include "macros.s"
+%include "config.s"
 CHECK_OPENBSD
 
 section .rodata
 	sec_inday:	dq 86400.0
 	jul1970:	dq 2440587.5
 	offset:		dq 0xc142b42c80000000	;double -2451545
-	to_rad:		dq 0x3f91df46a2529d39	;double pi / 180 to radian
-	to_deg:		dq 0x404ca5dc1a63c1f8	;double 180 / pi to degree
+	to_rad:		dq 0x3f91df46a2529d39	;double pi / 180
+	to_deg:		dq 0x404ca5dc1a63c1f8	;double 180 / pi
 	g_1:		dq 0x3fef8a099930e901	;double 0.98560027999999999
 	g_2:		dq 0x40765876c8b43958	;double 357.529
 	e_3:		dq 0xbe9828c0be769dc1	;double -3.5999999999999999E-7
@@ -24,11 +25,17 @@ section .rodata
 	RA_1:		dq 0x402E000000000000	;double 15.0
 	asin_1:		dq 0x3FF0000000000000	;double 1
 	eqt_1:		dq 0x4076800000000000	;double 360.0
+	duhr_1:		dq 0x4028000000000000	;double 12.0
+	pray_1:		dq 0x4038000000000000	;double 24.0
+	neg1:		dq 0xBFF0000000000000	;double -1.0
+	one:		dq 0x3FF0000000000000	;double 1
+	p1:		dq 0X3fb1111111111111	;double 0.066666666666666666
+	hours_to_sec:	dq 0x40ac200000000000	;double 3600
 
 section .bss
+
 	tstamp:	resb 12
 	julian:	resq 1
-	EqT:	resq 1
 	g:	resq 1
 	g2:	resq 1
 	sing:	resq 1
@@ -39,20 +46,39 @@ section .bss
 	cosL:	resq 1
 	RA_2:	resq 1
 	asin_x:	resq 1
+	x:	resq 1
 
 section .text
 	global _start
 
 _start:
-; get_timestamp:
+get_timestamp:
 	mov	rax, SYS_gettimeofday	;sys_gettimeofday(
 	mov	rdi, tstamp		;struct timeval *tv,
 	mov	rsi, rsi		;struct timezone* tz
 	syscall
 
-; calc_julian:(timestamp / sec_in_day) + jul1970
-	cvtsi2sd xmm0, [tstamp]		;convert timestamp to double
-	divsd	xmm0, [sec_inday]	;timestamp / sec_in_day
+; start_of_day:				; = tstamp - (tstamp % 86400);
+	mov	edi, [tstamp]
+	movsx	rax, edi
+	mov	edx, edi
+	imul	rax, rax, -1037155065
+	sar	edx, 31
+	shr	rax, 32
+	add	eax, edi
+	sar	eax, 16
+	sub	eax, edx
+	imul	edx, eax, 86400
+	mov	eax, edi
+	sub	eax, edx
+	cvtsi2sd xmm15, rdx
+	movsd xmm14, [time_zone]
+	mulsd xmm14, [hours_to_sec]
+	subsd xmm15, xmm14
+
+; calc_julian:;(tstamp / sec_inday) + jul1970
+	cvtsi2sd xmm0, [tstamp]		;convert tstamp to double
+	divsd	xmm0, [sec_inday]	;tstamp / sec_inday
 	addsd	xmm0, [jul1970]		;div result + jul1970
 ; 	xmm0 = julian
 
@@ -175,5 +201,102 @@ _start:
 ; 	xmm9 = EqT
 ; 	EqT = EqT - 360.0
 	subsd xmm9, [eqt_1]
+;xmm8 = D
+;xmm9 = EqT
+
+; get_duhr:	duhr = 12.0 + time_zone - EqT - (longitude / 15.0);
+; 		xmm0 - (pray_1 * floor(xmm1 / pray_1));
+	movsd	xmm1, [longitude]
+	divsd	xmm1, [RA_1]
+	movsd	xmm0, [duhr_1]
+	addsd	xmm0, [time_zone]
+	subsd	xmm0, xmm9
+	subsd	xmm0, xmm1
+
+; 	normalize duhr
+	movsd	xmm1, xmm0
+	divsd	xmm1, [pray_1]
+	roundsd	xmm1, xmm1, ROUND_DOWN	;floor(xmm1)
+	mulsd	xmm1, [pray_1]
+	subsd	xmm0, xmm1
+;xmm0 = duhr
+
+; get_fajr:;	fajr = duhr - T(fajr_angle, D);
+	;T
+; 	p2 =	cos(convert_degrees_to_radians(latitude)) *
+; 		cos(convert_degrees_to_radians(D));
+	movsd	xmm1, [latitude]
+	mulsd	xmm1, [to_rad]
+	movsd	[x], xmm1
+	fld	qword [x]
+	fcos
+	fstp	qword [x]
+	movsd	xmm1, [x]
+
+	movsd	xmm2, xmm8,
+	mulsd	xmm2, [to_rad]
+	movsd	[x], xmm2
+	fld	qword [x]
+	fcos
+	fstp	qword [x]
+	movsd	xmm2, [x]
+	mulsd	xmm1, xmm2
+;xmm1 = p2
+
+; 	p3 =	sin(convert_degrees_to_radians(latitude)) *
+; 		sin(convert_degrees_to_radians(D));
+	movsd	xmm2, [latitude]
+	mulsd	xmm2, [to_rad]
+	movsd	[sine], xmm2
+	fld	qword [sine]
+	fsin
+	fstp	qword [sine]
+	movsd	xmm2, [sine]
+
+	movsd	xmm3, xmm8, ; xmm8 = D
+	mulsd	xmm3, [to_rad]
+	movsd	[sine], xmm3
+	fld	qword [sine]
+	fsin
+	fstp	qword [sine]
+	movsd	xmm3, [sine]
+	mulsd	xmm2, xmm3
+;xmm2 = p3
+
+; 	p4 = -1.0 * sin(convert_degrees_to_radians(alpha));
+	movsd	xmm3, [fajr_angle]
+	mulsd	xmm3, [to_rad]
+	movsd	[sine], xmm3
+	fld	qword [sine]
+	fsin
+	fstp	qword [sine]
+	movsd	xmm3, [sine]
+	mulsd	xmm3, [neg1]
+
+; 	p5 = convert_radians_to_degrees(acos((p4 - p3) / p2));
+	subsd xmm3, xmm2	; p4 - p3
+	divsd xmm3, xmm1	; / p2
+	movsd	[x], xmm3
+	ACOS	[x]
+	movsd	xmm3, [x]
+	mulsd	xmm3, [to_deg]	; xmm3 = p5
+	mulsd	xmm3, [p1]	; xmm3 = T
+
+	movsd xmm4, xmm3
+	movsd xmm3, xmm0	; xmm3 = duhr
+	subsd xmm3, xmm4	; xmm3 = duhr - T
+
+; convert_fajr_to_sec:
+	mulsd xmm3, [hours_to_sec]	; convert to seconds
+	roundsd	xmm3, xmm3, ROUND_DOWN	;floor(xmm1)
+	addsd xmm3, xmm15
+
+; 	duhr:		; xmm0
+; 	p2:		; xmm1
+; 	p3:		; xmm2
+; 	fajr:		; xmm3
+; 	EqT:		; xmm9
+; 	D:		; xmm8
+; 	start_of_day:	; xmm15
 
 	EEXIT EXIT_SUCCESS
