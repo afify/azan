@@ -9,14 +9,13 @@
 %define STDERR		2
 %define ROUND_UP	10B ;toward +inf
 %define ROUND_DOWN	01B ;toward -inf
+%define MAX_ARGC	2
 
 section .rodata
-	failure_msg: db  0x5b, 0x1b, 0x5b, 0x33, 0x31, 0x6d, 0x46\
-			0x41, 0x49, 0x4c, 0x45, 0x44, 0x1b, 0x5b\
-			0x30, 0x6d, 0x5d, 0x20, 0x00
-	failure_msglen: equ $ - failure_msg
-	julian_msg: db "Julian must be greader than offset.", 10, 0
-	julian_msglen: equ $ - julian_msg
+	usage_msg:	db "usage: azan-nasm [-v]", 10, 0
+	usage_len:	equ $ - usage_msg
+	version_msg:	db "azan-nasm-", VERSION, 10, 0
+	version_len:	equ $ - version_msg
 
 %macro CHECK_OPENBSD 0
 %ifdef OpenBSD
@@ -33,52 +32,14 @@ section .note.openbsd.ident note
 	syscall
 %endmacro
 
-%macro FAIL_MSG 0
+%macro DIE 2
 	mov rax, SYS_write
 	mov rdi, STDERR
-	mov rsi, failure_msg
-	mov rdx, failure_msglen
-	syscall
-%endmacro
-
-%macro FAILJULIAN 0
-	FAIL_MSG
-	mov rax, SYS_write
-	mov rdi, STDERR
-	mov rsi, julian_msg
-	mov rdx, julian_msglen
+	mov rsi, %1
+	mov rdx, %2
 	syscall
 	EEXIT EXIT_FAILURE
 %endmacro
-
-; %macro ACOS 1;	acos(x) = atan(sqrt((1-x*x)/(x*x)))
-; 	fld	qword %1
-; 	fld	st0
-; 	fmul
-; 	fld	st0
-; 	fld1
-; 	fsubr
-; 	fdivr
-; 	fsqrt
-; 	fld1
-; 	fpatan
-; 	fstp	qword %1
-; %endmacro
-
-; %macro ASIN 1	;asin(x) = atan(sqrt(x*x/(1-x*x)))
-; 	fld	qword %1
-; 	fld	st0
-; 	fmul
-; 	fld	st0
-; 	fld1
-; 	fsubr
-; 	fdiv
-; 	fsqrt
-; 	fld1
-; 	fpatan
-; 	fstp	qword %1
-; %endmacro
-
 
 %macro ACOS 1;	acos(x) = atan(sqrt((1-x*x)/(x*x)))
 	fld    qword %1

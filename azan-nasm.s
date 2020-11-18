@@ -52,6 +52,24 @@ section .text
 	global _start
 
 _start:
+	pop	rcx
+	cmp	rcx, MAX_ARGC
+	jl	get_timestamp
+	je	die_version
+
+die_usage:
+	DIE	usage_msg, usage_len
+
+die_version:
+	mov	rcx, [rsp+8]		; argv
+	cmp	[rcx], byte '-'
+	jne	die_usage
+	cmp	[rcx+1], byte 'v'
+	jne	die_usage
+	cmp	[rcx+2], byte 0
+	jne	die_usage
+	DIE	version_msg, version_len
+
 get_timestamp:
 	mov	rax, SYS_gettimeofday	;sys_gettimeofday(
 	mov	rdi, tstamp		;struct timeval *tv,
