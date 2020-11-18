@@ -1,10 +1,17 @@
 azan-nasm
 =========
+**prayers time calculator, written in nasm.**
 
-azan-nasm is nasm azan implementation
+- standalone nasm
+- unix portable syscalls
+- tested on Linux and OpenBSD
 
 Installation
 ------------
+**dependency**
+- nasm (assembler)
+- ld (linker)
+
 **current**
 ```sh
 git clone https://github.com/afify/azan-nasm.git
@@ -27,6 +34,10 @@ $ azan-nasm
 Options
 -------
 ```sh
-$ azan-nasm
 $ man azan-nasm
 ```
+
+Configuration
+-------------
+The configuration of azan-nasm is done by creating a custom config.s
+and (re)compiling the source code.
