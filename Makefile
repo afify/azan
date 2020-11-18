@@ -19,7 +19,10 @@ options:
 .s.o:
 	${ASM} ${AFLAGS} $<
 
-${OBJ}: config.mk
+${OBJ}: config.s config.mk
+
+config.s:
+	cp config.def.s $@
 
 ${BIN}: ${OBJ}
 	${LNK} ${LFLAGS} -o $@ ${OBJ}
