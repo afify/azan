@@ -17,6 +17,15 @@ section .rodata
 	version_msg:	db "azan-nasm-", VERSION, 10, 0
 	version_len:	equ $ - version_msg
 
+	fajr_msg:	db "fajr is bigger", 10, 0
+	fajr_len:	equ $ - fajr_msg
+
+	duhr_msg:	db "duhr is bigger", 10, 0
+	duhr_len:	equ $ - duhr_msg
+
+	asr_msg:	db "asr is bigger", 10, 0
+	asr_len:	equ $ - asr_msg
+
 %macro CHECK_OPENBSD 0
 %ifdef OpenBSD
 section .note.openbsd.ident note
@@ -41,8 +50,9 @@ section .note.openbsd.ident note
 	EEXIT EXIT_FAILURE
 %endmacro
 
-%macro ACOS 1;	acos(x) = atan(sqrt((1-x*x)/(x*x)))
-	fld    qword %1
+%macro ACOS 1	;acos(x) = atan(sqrt((1-x*x)/(x*x)))
+	movsd	[tmp0], %1
+	fld    qword [tmp0]
 	fld    st0
 	fmul   st0, st1
 	fld1
@@ -50,18 +60,47 @@ section .note.openbsd.ident note
 	fsqrt
 	fxch
 	fpatan
-	fstp	qword %1
+	fstp	qword [tmp0]
+	movsd	%1, [tmp0]
 %endmacro
 
-%macro ASIN 1
-	fld    qword %1
+%macro ASIN 1	;asin(x) = atan(sqrt(x*x/(1-x*x)))
+	movsd	[tmp0], %1
+	fld    qword [tmp0]
 	fld    st0
 	fmul   st0, st1
 	fld1
 	fsubrp st1, st0
 	fsqrt
 	fpatan
-	fstp	qword %1
+	fstp	qword [tmp0]
+	movsd	%1, [tmp0]
+%endmacro
+
+%macro COS 1
+	movsd	[tmp0], %1
+	fld	qword [tmp0]
+	fcos
+	fstp	qword [tmp0]
+	movsd	%1, [tmp0]
+%endmacro
+
+%macro SIN 1
+	movsd	[tmp0], %1
+	fld	qword [tmp0]
+	fsin
+	fstp	qword [tmp0]
+	movsd	%1, [tmp0]
+%endmacro
+
+%macro ATAN2 2
+	movsd	[tmp0], %1
+	movsd	[tmp1], %2
+	fld	qword [tmp0]	;x
+	fld	qword [tmp1]	;y
+	fpatan
+	fstp	qword [tmp0]
+	movsd	%1, [tmp0]
 %endmacro
 
 %endif ;MACROS_S
