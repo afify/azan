@@ -149,4 +149,28 @@ section .note.openbsd.ident note
 	mov [res_msg+6], dl
 %endmacro
 
+%macro CALC_P2 0
+	;p2 =	cos(convert_degrees_to_radians(latitude)) *
+	;	cos(convert_degrees_to_radians(D)) = xmm1
+	movsd	xmm1, [latitude]
+	mulsd	xmm1, [to_rad]
+	COS	xmm1
+	movsd	xmm2, xmm8,
+	mulsd	xmm2, [to_rad]
+	COS	xmm2
+	mulsd	xmm1, xmm2
+%endmacro
+
+%macro CALC_P3 0
+	;p3 =	sin(convert_degrees_to_radians(latitude)) *
+	;	sin(convert_degrees_to_radians(D)) = xmm2
+	movsd	xmm2, [latitude]
+	mulsd	xmm2, [to_rad]
+	SIN	xmm2
+	movsd	xmm3, xmm8, ; xmm8 = D
+	mulsd	xmm3, [to_rad]
+	SIN	xmm3
+	mulsd	xmm2, xmm3
+%endmacro
+
 %endif ;MACROS_S

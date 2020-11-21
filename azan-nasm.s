@@ -174,27 +174,12 @@ get_duhr:			;duhr = 12.0+time_zone-EqT-(longitude/15.0);
 	subsd	xmm0, xmm1
 	;xmm0 = duhr
 
+calc_p2p3:
+	CALC_P2			;xmm1
+	CALC_P3			;xmm2
+
 get_fajr:			;fajr = duhr - T(fajr_angle, D);
 	;calculate T = p1 * p5
-	;p2 =	cos(convert_degrees_to_radians(latitude)) *
-	;	cos(convert_degrees_to_radians(D)) = xmm1
-	movsd	xmm1, [latitude]
-	mulsd	xmm1, [to_rad]
-	COS	xmm1
-	movsd	xmm2, xmm8,
-	mulsd	xmm2, [to_rad]
-	COS	xmm2
-	mulsd	xmm1, xmm2
-
-	;p3 =	sin(convert_degrees_to_radians(latitude)) *
-	;	sin(convert_degrees_to_radians(D)) = xmm2
-	movsd	xmm2, [latitude]
-	mulsd	xmm2, [to_rad]
-	SIN	xmm2
-	movsd	xmm3, xmm8, ; xmm8 = D
-	mulsd	xmm3, [to_rad]
-	SIN	xmm3
-	mulsd	xmm2, xmm3
 
 	;p4 = -1.0 * sin(convert_degrees_to_radians(alpha)) = xmm3
 	movsd	xmm3, [fajr_angle]
@@ -222,7 +207,6 @@ test_fajr:
 	addsd	xmm3, xmm15		;fajr seconds + start_of_day
 	ucomisd	xmm3, xmm6		;if fajr > tstamp
 	jae	print_fajr
-	jmp	test_duhr
 
 test_duhr:
 	mulsd	xmm0, [sec_inhour]	;convert to seconds
@@ -230,7 +214,54 @@ test_duhr:
 	addsd	xmm0, xmm15		;duhr seconds + start_of_day
 	ucomisd	xmm0, xmm6		;if duhr > tstamp
 	jae	print_duhr
-	jmp	get_asr
+
+get_asr:
+; 	asr = duhr + A(1.0, D);
+; 	A = p1 * p7 = xmm4
+; 	p4 = tan(convert_degrees_to_radians((latitude - D)))
+; 	p5 = atan2(1.0, (t + p4));
+; 	p6 = sin(p5) = xmm4
+	movsd	xmm4, [latitude]
+	subsd	xmm4, xmm8
+	mulsd	xmm4, [to_rad]
+	movsd	[tmp0], xmm4
+	fld1
+	fld	qword [tmp0]
+	fptan
+	fadd
+	fpatan
+	fsin
+	fstp	qword [tmp0]
+	movsd	xmm4, [tmp0]
+
+; 	p7 = convert_radians_to_degrees(acos((p6 - p3) / p2));
+	subsd xmm4, xmm2
+	divsd xmm4, xmm1
+	ACOS xmm4
+	mulsd xmm4, [to_deg]
+
+; 	A = p1 * p7 = xmm4
+	mulsd xmm4, [p1]
+	addsd xmm4, xmm0
+
+	;normalize_asr:
+	;xmm4 - (pray_1 * floor(xmm1 / pray_1));
+	movsd	xmm1, xmm4
+	divsd	xmm1, [pray_1]
+	roundsd	xmm1, xmm1, ROUND_DOWN	;floor(xmm1)
+	mulsd	xmm1, [pray_1]
+	subsd	xmm4, xmm1
+	;xmm4 = asr
+
+test_asr:
+	mulsd	xmm4, [sec_inhour]	;convert to seconds
+	roundsd	xmm4, xmm4, ROUND_DOWN
+	addsd	xmm4, xmm15		;fajr seconds + start_of_day
+	ucomisd	xmm4, xmm6		;if fajr > tstamp
+	jae	print_asr
+
+get_maghrib:
+	PRINT_EXIT
 
 print_fajr:
 	mov [res_msg], byte 'F'
@@ -242,13 +273,16 @@ print_duhr:
 	CALC_DIFF xmm0
 	PRINT_EXIT
 
-get_asr:
+print_asr:
+	mov [res_msg], byte 'A'
+	CALC_DIFF xmm4
 	PRINT_EXIT
 
 ; 	duhr:		; xmm0
 ; 	p2:		; xmm1
 ; 	p3:		; xmm2
 ; 	fajr:		; xmm3
+; 	asr:		; xmm4
 ; 	tstamp:		; xmm6
 ; 	EqT:		; xmm9
 ; 	D:		; xmm8
