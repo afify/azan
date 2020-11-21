@@ -17,14 +17,9 @@ section .rodata
 	version_msg:	db "azan-nasm-", VERSION, 10, 0
 	version_len:	equ $ - version_msg
 
-	fajr_msg:	db "fajr is bigger", 10, 0
-	fajr_len:	equ $ - fajr_msg
-
-	duhr_msg:	db "duhr is bigger", 10, 0
-	duhr_len:	equ $ - duhr_msg
-
-	asr_msg:	db "asr is bigger", 10, 0
-	asr_len:	equ $ - asr_msg
+section .data
+	res_msg:	db "X XX:XX", 10, 0
+	res_len:	equ $ - res_msg
 
 %macro CHECK_OPENBSD 0
 %ifdef OpenBSD
@@ -48,6 +43,16 @@ section .note.openbsd.ident note
 	mov rdx, %2
 	syscall
 	EEXIT EXIT_FAILURE
+%endmacro
+
+%macro PRINT_EXIT 0
+	SET_MSG
+	mov rax, SYS_write
+	mov rdi, STDOUT
+	mov rsi, res_msg
+	mov rdx, res_len
+	syscall
+	EEXIT EXIT_SUCCESS
 %endmacro
 
 %macro ACOS 1	;acos(x) = atan(sqrt((1-x*x)/(x*x)))
@@ -101,6 +106,47 @@ section .note.openbsd.ident note
 	fpatan
 	fstp	qword [tmp0]
 	movsd	%1, [tmp0]
+%endmacro
+
+%macro CALC_DIFF 1
+	; diff = prayer time - tstamp
+	subsd	%1, xmm6
+
+	;hours = floor(diff / sec_inhour) = xmm13
+	movsd	xmm13, %1
+	divsd	xmm13, [sec_inhour]
+	roundsd xmm13, xmm13, ROUND_DOWN
+	cvtsd2si r8, xmm13
+
+	;remaining_seconds = diff - (hours * sec_inhour) = xmm14
+	movsd	xmm14, %1
+	mulsd	xmm13, [sec_inhour]
+	subsd	xmm14, xmm13
+
+	;minutes = remaining_seconds / sec_inmin
+	divsd	xmm14, [sec_inmin]
+	roundsd	xmm14, xmm14, ROUND_DOWN
+	cvtsd2si r9, xmm14
+%endmacro
+
+%macro SET_MSG 0
+	xor rdx, rdx
+	mov rbx, 0xa
+	mov rax, r8
+	div ebx
+	add rax, 0x30
+	add rdx, 0x30
+	mov [res_msg+2], al
+	mov [res_msg+3], dl
+
+	xor rdx, rdx
+	mov rbx, 10
+	mov rax, r9
+	div ebx
+	add rax, 0x30
+	add rdx, 0x30
+	mov [res_msg+5], al
+	mov [res_msg+6], dl
 %endmacro
 
 %endif ;MACROS_S

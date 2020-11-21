@@ -28,11 +28,12 @@ section .rodata
 	pray_1:		dq 0x4038000000000000	;double 24.0
 	neg1:		dq 0xBFF0000000000000	;double -1.0
 	p1:		dq 0X3fb1111111111111	;double 0.066666666666666666
-	hours_to_sec:	dq 0x40ac200000000000	;double 3600
+	sec_inhour:	dq 0x40ac200000000000	;double 3600
+	sec_inmin:	dq 0x404e000000000000	;double 60
 
 section .bss
-	tmp0:	resq 1
-	tmp1:	resq 1
+	tmp0:		resq 1
+	tmp1:		resq 1
 
 section .text
 	global _start
@@ -77,7 +78,7 @@ get_timestamp:
 	sub	eax, edx
 	cvtsi2sd xmm15, rdx
 	movsd	xmm14, [time_zone]
-	mulsd	xmm14, [hours_to_sec]
+	mulsd	xmm14, [sec_inhour]
 	subsd	xmm15, xmm14
 
 	;tstamp = xmm6 convert tstamp to double
@@ -215,30 +216,34 @@ get_fajr:			;fajr = duhr - T(fajr_angle, D);
 	movsd	xmm3, xmm0
 	subsd	xmm3, xmm4
 
-convert_fajr_to_time:
-	mulsd	xmm3, [hours_to_sec]	;convert to seconds
+test_fajr:
+	mulsd	xmm3, [sec_inhour]	;convert to seconds
 	roundsd	xmm3, xmm3, ROUND_DOWN
 	addsd	xmm3, xmm15		;fajr seconds + start_of_day
 	ucomisd	xmm3, xmm6		;if fajr > tstamp
-	jae	calculate_left_fajr
-	jmp	convert_duhr_to_time
+	jae	print_fajr
+	jmp	test_duhr
 
-convert_duhr_to_time:
-	mulsd	xmm0, [hours_to_sec]	;convert to seconds
+test_duhr:
+	mulsd	xmm0, [sec_inhour]	;convert to seconds
 	roundsd	xmm0, xmm0, ROUND_DOWN
 	addsd	xmm0, xmm15		;duhr seconds + start_of_day
 	ucomisd	xmm0, xmm6		;if duhr > tstamp
-	jae	calculate_left_duhr
-	jmp	calculate_asr
+	jae	print_duhr
+	jmp	get_asr
 
-calculate_left_fajr:
-	DIE	fajr_msg, fajr_len
-;
-calculate_left_duhr:
-	DIE	duhr_msg, duhr_len
-;
-calculate_asr:
-	DIE	asr_msg, asr_len
+print_fajr:
+	mov [res_msg], byte 'F'
+	CALC_DIFF xmm3
+	PRINT_EXIT
+
+print_duhr:
+	mov [res_msg], byte 'D'
+	CALC_DIFF xmm0
+	PRINT_EXIT
+
+get_asr:
+	PRINT_EXIT
 
 ; 	duhr:		; xmm0
 ; 	p2:		; xmm1
@@ -247,6 +252,8 @@ calculate_asr:
 ; 	tstamp:		; xmm6
 ; 	EqT:		; xmm9
 ; 	D:		; xmm8
+; 	result_hour	; r8
+; 	result_min	; r9
 ; 	start_of_day:	; xmm15
 
 	EEXIT EXIT_SUCCESS
