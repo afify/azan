@@ -32,6 +32,8 @@ section .rodata
 	sec_inmin:	dq 0x404e000000000000	;double 60
 	maghrib_1:	dq 0x3fa1c432ca57a787	;double 0.0347
 	maghrib_2:	dq 0x3feaaaaaaaaaaaab	;double 0.833333333333333333
+	isha_nor:	dq 0x40b5180000000000	;double 5400.0 90 min
+	isha_ram:	dq 0x40bc200000000000	;double 7200.0 120 min
 
 section .bss
 	tmp0:		resq 1
@@ -166,7 +168,7 @@ get_duhr:	;duhr = 12.0+time_zone-EqT-(longitude/15.0)=xmm0
 	addsd	xmm0, [time_zone]
 	subsd	xmm0, xmm9
 	subsd	xmm0, xmm1
-	NORM xmm0, [pray_1]	;normalize duhr
+	NORM xmm0, [pray_1]
 
 calc_p2p3:
 	CALC_P2			;xmm1
@@ -241,7 +243,6 @@ get_maghrib:	;duhr + T(0.8333 + 0.0347 * sqrt(altitude), D) = xmm5
 	addsd xmm5, xmm13
 
 test_maghrib:
-	movsd	xmm12, xmm5		;save maghrib to xmm12
 	mulsd	xmm5, [sec_inhour]	;convert to seconds
 	roundsd	xmm5, xmm5, ROUND_DOWN
 	addsd	xmm5, xmm15		;maghrib seconds + start_of_day
@@ -249,7 +250,40 @@ test_maghrib:
 	jae	print_maghrib
 
 get_isha:
-	jmp print_isha
+	mov rcx, 1
+	cmp rcx, use_umm_al_qura
+	jne um_nor
+	cmp rcx, ramadan
+	je um_ram
+
+um_nor:		;maghrib + 90.0 min;
+	movsd xmm7, [isha_nor]
+	addsd xmm7, xmm5
+	jmp test_isha
+
+um_ram:		;maghrib + 120.0 min;
+	movsd xmm7, [isha_ram]
+	addsd xmm7, xmm5
+	jmp test_isha
+
+calc_isha_nor:	;duhr + T(isha_angle, D);
+	movsd xmm7, [isha_angle]
+	CALC_T xmm7
+	addsd xmm7, xmm13
+	NORM xmm7, [pray_1]
+
+test_isha:
+	ucomisd	xmm7, xmm6		;if maghrib > tstamp
+	jae	print_isha
+
+get_nfajr:	;fajr + sec_inday
+	movsd xmm12, [sec_inday]
+	addsd xmm12, xmm3
+
+print_nfajr:
+	mov [res_msg], byte 'F'
+	CALC_DIFF xmm12
+	PRINT_EXIT
 
 print_fajr:
 	mov [res_msg], byte 'F'
@@ -273,7 +307,7 @@ print_maghrib:
 
 print_isha:
 	mov [res_msg], byte 'I'
-; 	CALC_DIFF xmm7
+	CALC_DIFF xmm7
 	PRINT_EXIT
 
 ; 	result_hour	; r8
@@ -285,9 +319,10 @@ print_isha:
 ; 	asr_ts		; xmm4
 ;	maghrib_ts:	; xmm5
 ; 	tstamp:		; xmm6
-; 	EqT:		; xmm9
+; 	isha_ts:	; xmm7
 ; 	D:		; xmm8
-;	maghrib:	; xmm12
+; 	EqT:		; xmm9
+;	next_fajr	; xmm12
 ;	duhr:		; xmm13
 ;	macros:		; xmm14
 ; 	start_of_day:	; xmm15
