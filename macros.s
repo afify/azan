@@ -112,16 +112,16 @@ section .note.openbsd.ident note
 	; diff = prayer time - tstamp
 	subsd	%1, xmm6
 
-	;hours = floor(diff / sec_inhour) = xmm13
-	movsd	xmm13, %1
-	divsd	xmm13, [sec_inhour]
-	roundsd xmm13, xmm13, ROUND_DOWN
-	cvtsd2si r8, xmm13
+	;hours = floor(diff / sec_inhour) = xmm15
+	movsd	xmm15, %1
+	divsd	xmm15, [sec_inhour]
+	roundsd xmm15, xmm15, ROUND_DOWN
+	cvtsd2si r8, xmm15
 
 	;remaining_seconds = diff - (hours * sec_inhour) = xmm14
 	movsd	xmm14, %1
-	mulsd	xmm13, [sec_inhour]
-	subsd	xmm14, xmm13
+	mulsd	xmm15, [sec_inhour]
+	subsd	xmm14, xmm15
 
 	;minutes = remaining_seconds / sec_inmin
 	divsd	xmm14, [sec_inmin]
@@ -171,6 +171,30 @@ section .note.openbsd.ident note
 	mulsd	xmm3, [to_rad]
 	SIN	xmm3
 	mulsd	xmm2, xmm3
+%endmacro
+
+%macro NORM 2;	n = x - (y * floor(x / y));
+	movsd xmm14, %1
+	divsd xmm14, %2
+	roundsd xmm14, xmm14, ROUND_DOWN
+	mulsd xmm14, %2
+	subsd %1, xmm14
+%endmacro
+
+%macro CALC_T 1; T = p1 * p5
+	;p4 = -1.0 * sin(convert_degrees_to_radians(alpha)) = %1
+	mulsd	%1, [to_rad]
+	SIN	%1
+	mulsd	%1, [neg1]
+
+	;p5 = convert_radians_to_degrees(acos((p4 - p3) / p2)) = %1
+	subsd	%1, xmm2	; p4 - p3
+	divsd	%1, xmm1	; / p2
+	ACOS	%1
+	mulsd	%1, [to_deg]	; %1 = p5
+
+	;T = p1 * p5 = %1
+	mulsd	%1, [p1]
 %endmacro
 
 %endif ;MACROS_S

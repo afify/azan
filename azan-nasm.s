@@ -30,6 +30,8 @@ section .rodata
 	p1:		dq 0X3fb1111111111111	;double 0.066666666666666666
 	sec_inhour:	dq 0x40ac200000000000	;double 3600
 	sec_inmin:	dq 0x404e000000000000	;double 60
+	maghrib_1:	dq 0x3fa1c432ca57a787	;double 0.0347
+	maghrib_2:	dq 0x3feaaaaaaaaaaaab	;double 0.833333333333333333
 
 section .bss
 	tmp0:		resq 1
@@ -157,44 +159,23 @@ calc_equation_of_time:
 	subsd	xmm9, xmm7	;- RA
 	subsd	xmm9, [eqt_1]	;EqT = EqT - 360.0
 
-get_duhr:			;duhr = 12.0+time_zone-EqT-(longitude/15.0);
+get_duhr:	;duhr = 12.0+time_zone-EqT-(longitude/15.0)=xmm0
 	movsd	xmm1, [longitude]
 	divsd	xmm1, [RA_1]
 	movsd	xmm0, [duhr_1]
 	addsd	xmm0, [time_zone]
 	subsd	xmm0, xmm9
 	subsd	xmm0, xmm1
-
-	;normalize duhr
-	;xmm0 - (pray_1 * floor(xmm1 / pray_1));
-	movsd	xmm1, xmm0
-	divsd	xmm1, [pray_1]
-	roundsd	xmm1, xmm1, ROUND_DOWN	;floor(xmm1)
-	mulsd	xmm1, [pray_1]
-	subsd	xmm0, xmm1
-	;xmm0 = duhr
+	NORM xmm0, [pray_1]	;normalize duhr
 
 calc_p2p3:
 	CALC_P2			;xmm1
 	CALC_P3			;xmm2
 
-get_fajr:			;fajr = duhr - T(fajr_angle, D);
-	;calculate T = p1 * p5
+get_fajr:	;fajr = duhr - T(fajr_angle, D) = xmm3
 
-	;p4 = -1.0 * sin(convert_degrees_to_radians(alpha)) = xmm3
 	movsd	xmm3, [fajr_angle]
-	mulsd	xmm3, [to_rad]
-	SIN	xmm3
-	mulsd	xmm3, [neg1]
-
-	;p5 = convert_radians_to_degrees(acos((p4 - p3) / p2)) = xmm3
-	subsd	xmm3, xmm2	; p4 - p3
-	divsd	xmm3, xmm1	; / p2
-	ACOS	xmm3
-	mulsd	xmm3, [to_deg]	; xmm3 = p5
-
-	;T = p1 * p5 = xmm3
-	mulsd	xmm3, [p1]
+	CALC_T	xmm3
 
 	;fajr = duhr - T = xmm3
 	movsd	xmm4, xmm3
@@ -209,14 +190,14 @@ test_fajr:
 	jae	print_fajr
 
 test_duhr:
+	movsd	xmm13, xmm0		;save duhr to xmm13
 	mulsd	xmm0, [sec_inhour]	;convert to seconds
 	roundsd	xmm0, xmm0, ROUND_DOWN
 	addsd	xmm0, xmm15		;duhr seconds + start_of_day
 	ucomisd	xmm0, xmm6		;if duhr > tstamp
 	jae	print_duhr
 
-get_asr:
-; 	asr = duhr + A(1.0, D);
+get_asr: 	;asr = duhr + A(1.0, D);
 ; 	A = p1 * p7 = xmm4
 ; 	p4 = tan(convert_degrees_to_radians((latitude - D)))
 ; 	p5 = atan2(1.0, (t + p4));
@@ -242,26 +223,33 @@ get_asr:
 
 ; 	A = p1 * p7 = xmm4
 	mulsd xmm4, [p1]
-	addsd xmm4, xmm0
-
-	;normalize_asr:
-	;xmm4 - (pray_1 * floor(xmm1 / pray_1));
-	movsd	xmm1, xmm4
-	divsd	xmm1, [pray_1]
-	roundsd	xmm1, xmm1, ROUND_DOWN	;floor(xmm1)
-	mulsd	xmm1, [pray_1]
-	subsd	xmm4, xmm1
-	;xmm4 = asr
+	addsd xmm4, xmm13
+	NORM xmm4, [pray_1]
 
 test_asr:
 	mulsd	xmm4, [sec_inhour]	;convert to seconds
 	roundsd	xmm4, xmm4, ROUND_DOWN
-	addsd	xmm4, xmm15		;fajr seconds + start_of_day
-	ucomisd	xmm4, xmm6		;if fajr > tstamp
+	addsd	xmm4, xmm15		;asr seconds + start_of_day
+	ucomisd	xmm4, xmm6		;if asr > tstamp
 	jae	print_asr
 
-get_maghrib:
-	PRINT_EXIT
+get_maghrib:	;duhr + T(0.8333 + 0.0347 * sqrt(altitude), D) = xmm5
+	sqrtsd xmm5, [altitude]
+	mulsd xmm5, [maghrib_1]
+	addsd xmm5, [maghrib_2]
+	CALC_T	xmm5
+	addsd xmm5, xmm13
+
+test_maghrib:
+	movsd	xmm12, xmm5		;save maghrib to xmm12
+	mulsd	xmm5, [sec_inhour]	;convert to seconds
+	roundsd	xmm5, xmm5, ROUND_DOWN
+	addsd	xmm5, xmm15		;maghrib seconds + start_of_day
+	ucomisd	xmm5, xmm6		;if maghrib > tstamp
+	jae	print_maghrib
+
+get_isha:
+	jmp print_isha
 
 print_fajr:
 	mov [res_msg], byte 'F'
@@ -278,16 +266,30 @@ print_asr:
 	CALC_DIFF xmm4
 	PRINT_EXIT
 
-; 	duhr:		; xmm0
+print_maghrib:
+	mov [res_msg], byte 'M'
+	CALC_DIFF xmm5
+	PRINT_EXIT
+
+print_isha:
+	mov [res_msg], byte 'I'
+; 	CALC_DIFF xmm7
+	PRINT_EXIT
+
+; 	result_hour	; r8
+; 	result_min	; r9
+; 	duhr_ts:	; xmm0
 ; 	p2:		; xmm1
 ; 	p3:		; xmm2
-; 	fajr:		; xmm3
-; 	asr:		; xmm4
+; 	fajr_ts:	; xmm3
+; 	asr_ts		; xmm4
+;	maghrib_ts:	; xmm5
 ; 	tstamp:		; xmm6
 ; 	EqT:		; xmm9
 ; 	D:		; xmm8
-; 	result_hour	; r8
-; 	result_min	; r9
+;	maghrib:	; xmm12
+;	duhr:		; xmm13
+;	macros:		; xmm14
 ; 	start_of_day:	; xmm15
 
 	EEXIT EXIT_SUCCESS
