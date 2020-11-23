@@ -36,8 +36,8 @@ section .rodata
 	isha_ram:	dq 0x40bc200000000000	;double 7200.0 120 min
 
 section .bss
-	tmp0:		resq 1
-	tmp1:		resq 1
+	tmp0:	resq 1
+	tmp1:	resq 1
 
 section .text
 	global _start
@@ -52,7 +52,7 @@ die_usage:
 	DIE	usage_msg, usage_len
 
 die_version:
-	mov	rcx, [rsp+8]		; argv
+	mov	rcx, [rsp+8]		;argv
 	cmp	[rcx], byte '-'
 	jne	die_usage
 	cmp	[rcx+1], byte 'v'
@@ -67,7 +67,7 @@ get_timestamp:
 	mov	rsi, rsi		;struct timezone* tz
 	syscall
 
-	; start_of_day = tstamp - (tstamp % 86400);
+	;start_of_day = tstamp - (tstamp % 86400);
 	mov	edi, [tmp0]
 	movsx	rax, edi
 	mov	edx, edi
@@ -168,11 +168,11 @@ get_duhr:	;duhr = 12.0+time_zone-EqT-(longitude/15.0)=xmm0
 	addsd	xmm0, [time_zone]
 	subsd	xmm0, xmm9
 	subsd	xmm0, xmm1
-	NORM xmm0, [pray_1]
+	NORM	xmm0, [pray_1]
 
 calc_p2p3:
-	CALC_P2			;xmm1
-	CALC_P3			;xmm2
+	CALC_P2	;xmm1
+	CALC_P3	;xmm2
 
 get_fajr:	;fajr = duhr - T(fajr_angle, D) = xmm3
 
@@ -199,11 +199,11 @@ test_duhr:
 	ucomisd	xmm0, xmm6		;if duhr > tstamp
 	jae	print_duhr
 
-get_asr: 	;asr = duhr + A(1.0, D);
-; 	A = p1 * p7 = xmm4
-; 	p4 = tan(convert_degrees_to_radians((latitude - D)))
-; 	p5 = atan2(1.0, (t + p4));
-; 	p6 = sin(p5) = xmm4
+get_asr:	;asr = duhr + A(1.0, D);
+	;A = p1 * p7 = xmm4
+	;p4 = tan(convert_degrees_to_radians((latitude - D)))
+	;p5 = atan2(1.0, (t + p4));
+	;p6 = sin(p5) = xmm4
 	movsd	xmm4, [latitude]
 	subsd	xmm4, xmm8
 	mulsd	xmm4, [to_rad]
@@ -217,16 +217,16 @@ get_asr: 	;asr = duhr + A(1.0, D);
 	fstp	qword [tmp0]
 	movsd	xmm4, [tmp0]
 
-; 	p7 = convert_radians_to_degrees(acos((p6 - p3) / p2));
-	subsd xmm4, xmm2
-	divsd xmm4, xmm1
-	ACOS xmm4
-	mulsd xmm4, [to_deg]
+	;p7 = convert_radians_to_degrees(acos((p6 - p3) / p2));
+	subsd	xmm4, xmm2
+	divsd	xmm4, xmm1
+	ACOS	xmm4
+	mulsd	xmm4, [to_deg]
 
-; 	A = p1 * p7 = xmm4
-	mulsd xmm4, [p1]
-	addsd xmm4, xmm13
-	NORM xmm4, [pray_1]
+	;A = p1 * p7 = xmm4
+	mulsd	xmm4, [p1]
+	addsd	xmm4, xmm13
+	NORM	xmm4, [pray_1]
 
 test_asr:
 	mulsd	xmm4, [sec_inhour]	;convert to seconds
@@ -236,11 +236,11 @@ test_asr:
 	jae	print_asr
 
 get_maghrib:	;duhr + T(0.8333 + 0.0347 * sqrt(altitude), D) = xmm5
-	sqrtsd xmm5, [altitude]
-	mulsd xmm5, [maghrib_1]
-	addsd xmm5, [maghrib_2]
+	sqrtsd	xmm5, [altitude]
+	mulsd	xmm5, [maghrib_1]
+	addsd	xmm5, [maghrib_2]
 	CALC_T	xmm5
-	addsd xmm5, xmm13
+	addsd	xmm5, xmm13
 
 test_maghrib:
 	mulsd	xmm5, [sec_inhour]	;convert to seconds
@@ -250,81 +250,81 @@ test_maghrib:
 	jae	print_maghrib
 
 get_isha:
-	mov rcx, 1
-	cmp rcx, use_umm_al_qura
-	jne um_nor
-	cmp rcx, ramadan
-	je um_ram
+	mov	rcx, 1
+	cmp	rcx, use_umm_al_qura
+	jne	um_nor
+	cmp	rcx, ramadan
+	je	um_ram
 
 um_nor:		;maghrib + 90.0 min;
-	movsd xmm7, [isha_nor]
-	addsd xmm7, xmm5
-	jmp test_isha
+	movsd	xmm7, [isha_nor]
+	addsd	xmm7, xmm5
+	jmp	test_isha
 
 um_ram:		;maghrib + 120.0 min;
-	movsd xmm7, [isha_ram]
-	addsd xmm7, xmm5
-	jmp test_isha
+	movsd	xmm7, [isha_ram]
+	addsd	xmm7, xmm5
+	jmp	test_isha
 
 calc_isha_nor:	;duhr + T(isha_angle, D);
-	movsd xmm7, [isha_angle]
-	CALC_T xmm7
-	addsd xmm7, xmm13
-	NORM xmm7, [pray_1]
+	movsd	xmm7, [isha_angle]
+	CALC_T	xmm7
+	addsd	xmm7, xmm13
+	NORM	xmm7, [pray_1]
 
 test_isha:
-	ucomisd	xmm7, xmm6		;if maghrib > tstamp
+	ucomisd	xmm7, xmm6	;if isha > tstamp
 	jae	print_isha
 
 get_nfajr:	;fajr + sec_inday
-	movsd xmm12, [sec_inday]
-	addsd xmm12, xmm3
+	movsd	xmm12, [sec_inday]
+	addsd	xmm12, xmm3
 
 print_nfajr:
-	mov [res_msg], byte 'F'
+	mov	[res_msg], byte 'F'
 	CALC_DIFF xmm12
 	PRINT_EXIT
 
 print_fajr:
-	mov [res_msg], byte 'F'
+	mov	[res_msg], byte 'F'
 	CALC_DIFF xmm3
 	PRINT_EXIT
 
 print_duhr:
-	mov [res_msg], byte 'D'
+	mov	[res_msg], byte 'D'
 	CALC_DIFF xmm0
 	PRINT_EXIT
 
 print_asr:
-	mov [res_msg], byte 'A'
+	mov	[res_msg], byte 'A'
 	CALC_DIFF xmm4
 	PRINT_EXIT
 
 print_maghrib:
-	mov [res_msg], byte 'M'
+	mov	[res_msg], byte 'M'
 	CALC_DIFF xmm5
 	PRINT_EXIT
 
 print_isha:
-	mov [res_msg], byte 'I'
+	mov	[res_msg], byte 'I'
 	CALC_DIFF xmm7
 	PRINT_EXIT
 
-; 	result_hour	; r8
-; 	result_min	; r9
-; 	duhr_ts:	; xmm0
-; 	p2:		; xmm1
-; 	p3:		; xmm2
-; 	fajr_ts:	; xmm3
-; 	asr_ts		; xmm4
-;	maghrib_ts:	; xmm5
-; 	tstamp:		; xmm6
-; 	isha_ts:	; xmm7
-; 	D:		; xmm8
-; 	EqT:		; xmm9
-;	next_fajr	; xmm12
-;	duhr:		; xmm13
-;	macros:		; xmm14
-; 	start_of_day:	; xmm15
+;	result_hour	;r8
+;	result_min	;r9
+;	duhr_ts:	;xmm0
+;	p2:		;xmm1
+;	p3:		;xmm2
+;	fajr_ts:	;xmm3
+;	asr_ts		;xmm4
+;	maghrib_ts:	;xmm5
+;	tstamp:		;xmm6
+;	isha_ts:	;xmm7
+;	D:		;xmm8
+;	EqT:		;xmm9
+;	next_fajr	;xmm12
+;	duhr:		;xmm13
+;	macros:		;xmm14
+;	start_of_day:	;xmm15
 
 	EEXIT EXIT_SUCCESS
