@@ -56,16 +56,16 @@ section .note.openbsd.ident note
 %endmacro
 
 %macro SEC_TO_HM 1
-	;hours = floor(diff / sec_inhour) = xmm15
-	movsd	xmm15, %1
-	divsd	xmm15, [sec_inhour]
-	roundsd xmm15, xmm15, ROUND_DOWN
-	cvtsd2si r8, xmm15
+	;hours = floor(diff / sec_inhour) = xmm10
+	movsd	xmm10, %1
+	divsd	xmm10, [sec_inhour]
+	roundsd xmm10, xmm10, ROUND_DOWN
+	cvtsd2si r8, xmm10
 
 	;remaining_seconds = diff - (hours * sec_inhour) = xmm14
 	movsd	xmm14, %1
-	mulsd	xmm15, [sec_inhour]
-	subsd	xmm14, xmm15
+	mulsd	xmm10, [sec_inhour]
+	subsd	xmm14, xmm10
 
 	;minutes = remaining_seconds / sec_inmin
 	divsd	xmm14, [sec_inmin]

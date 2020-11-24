@@ -5,6 +5,7 @@
 BITS 64
 %include "syscalls.s"
 %include "macros.s"
+%include "math.s"
 %include "config.s"
 CHECK_OPENBSD
 
@@ -59,6 +60,8 @@ check_argv:
 	jne	die_usage
 	mov	r12b, [r11+1]
 	cmp	r12b, 0x75	;u
+	je	get_timestamp
+	cmp	r12b, 0x6e	;n
 	je	get_timestamp
 	cmp	r12b, 0x76	;v
 	jne	die_usage
@@ -288,7 +291,9 @@ print_nfajr:
 	movsd	xmm14, xmm12
 	cmp	r12b, byte 'u'
 	je	print_unix
-	CALC_DIFF xmm12
+
+	subsd xmm12, xmm6	;diff = prayer time - tstamp = xmm12
+	SEC_TO_HM xmm12
 	PRINT_EXIT
 
 print_fajr:
@@ -296,7 +301,8 @@ print_fajr:
 	movsd	xmm14, xmm3
 	cmp	r12b, byte 'u'
 	je	print_unix
-	CALC_DIFF xmm3
+	subsd xmm3, xmm6	;diff = prayer time - tstamp = xmm3
+	SEC_TO_HM xmm3
 	PRINT_EXIT
 
 print_duhr:
@@ -304,7 +310,10 @@ print_duhr:
 	movsd	xmm14, xmm0
 	cmp	r12b, byte 'u'
 	je	print_unix
-	CALC_DIFF xmm0
+	cmp	r12b, byte 'n'
+	je	print_24
+	subsd xmm0, xmm6	;diff = prayer time - tstamp = xmm0
+	SEC_TO_HM xmm0
 	PRINT_EXIT
 
 print_asr:
@@ -312,7 +321,10 @@ print_asr:
 	movsd	xmm14, xmm4
 	cmp	r12b, byte 'u'
 	je	print_unix
-	CALC_DIFF xmm4
+	cmp	r12b, byte 'n'
+	je	print_24
+	subsd xmm4, xmm6	;diff = prayer time - tstamp = xmm4
+	SEC_TO_HM xmm4
 	PRINT_EXIT
 
 print_maghrib:
@@ -320,7 +332,10 @@ print_maghrib:
 	movsd	xmm14, xmm5
 	cmp	r12b, byte 'u'
 	je	print_unix
-	CALC_DIFF xmm5
+	cmp	r12b, byte 'n'
+	je	print_24
+	subsd xmm5, xmm6	;diff = prayer time - tstamp = xmm5
+	SEC_TO_HM xmm5
 	PRINT_EXIT
 
 print_isha:
@@ -328,11 +343,19 @@ print_isha:
 	movsd	xmm14, xmm7
 	cmp	r12b, byte 'u'
 	je	print_unix
-	CALC_DIFF xmm7
+	cmp	r12b, byte 'n'
+	je	print_24
+	subsd xmm7, xmm6	;diff = prayer time - tstamp = xmm7
+	SEC_TO_HM xmm7
 	PRINT_EXIT
 
 print_unix:
 	PRINT_INT	;from xmm14
+
+print_24:
+	subsd xmm14, xmm15	;prayer timestamp - start_of_day
+	SEC_TO_HM xmm14
+	PRINT_EXIT
 
 ;	result_hour	;r8
 ;	result_min	;r9
@@ -346,6 +369,7 @@ print_unix:
 ;	isha_ts:	;xmm7
 ;	D:		;xmm8
 ;	EqT:		;xmm9
+;	macros:		;xmm10
 ;	next_fajr	;xmm12
 ;	duhr:		;xmm13
 ;	macros:		;xmm14
