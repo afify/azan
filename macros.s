@@ -12,7 +12,7 @@
 %define MAX_ARGC	2
 
 section .rodata
-	usage_msg:	db "usage: azan-nasm [-nuv]", 10, 0
+	usage_msg:	db "usage: azan-nasm [-Nnuv]", 10, 0
 	usage_len:	equ $ - usage_msg
 	version_msg:	db "azan-nasm-", VERSION, 10, 0
 	version_len:	equ $ - version_msg

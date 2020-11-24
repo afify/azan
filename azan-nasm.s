@@ -63,6 +63,8 @@ check_argv:
 	je	get_timestamp
 	cmp	r12b, 0x6e	;n
 	je	get_timestamp
+	cmp	r12b, 0x4e	;N
+	je	get_timestamp
 	cmp	r12b, 0x76	;v
 	jne	die_usage
 	DIE	version_msg, version_len
@@ -291,7 +293,10 @@ print_nfajr:
 	movsd	xmm14, xmm12
 	cmp	r12b, byte 'u'
 	je	print_unix
-
+	cmp	r12b, byte 'n'
+	je	print_fajr
+	cmp	r12b, byte 'N'
+	je	print_fajr
 	subsd xmm12, xmm6	;diff = prayer time - tstamp = xmm12
 	SEC_TO_HM xmm12
 	PRINT_EXIT
@@ -301,6 +306,10 @@ print_fajr:
 	movsd	xmm14, xmm3
 	cmp	r12b, byte 'u'
 	je	print_unix
+	cmp	r12b, byte 'n'
+	je	print_24
+	cmp	r12b, byte 'N'
+	je	print_12
 	subsd xmm3, xmm6	;diff = prayer time - tstamp = xmm3
 	SEC_TO_HM xmm3
 	PRINT_EXIT
@@ -323,6 +332,8 @@ print_asr:
 	je	print_unix
 	cmp	r12b, byte 'n'
 	je	print_24
+	cmp	r12b, byte 'N'
+	je	print_12
 	subsd xmm4, xmm6	;diff = prayer time - tstamp = xmm4
 	SEC_TO_HM xmm4
 	PRINT_EXIT
@@ -334,6 +345,8 @@ print_maghrib:
 	je	print_unix
 	cmp	r12b, byte 'n'
 	je	print_24
+	cmp	r12b, byte 'N'
+	je	print_12
 	subsd xmm5, xmm6	;diff = prayer time - tstamp = xmm5
 	SEC_TO_HM xmm5
 	PRINT_EXIT
@@ -345,6 +358,8 @@ print_isha:
 	je	print_unix
 	cmp	r12b, byte 'n'
 	je	print_24
+	cmp	r12b, byte 'N'
+	je	print_12
 	subsd xmm7, xmm6	;diff = prayer time - tstamp = xmm7
 	SEC_TO_HM xmm7
 	PRINT_EXIT
@@ -355,6 +370,17 @@ print_unix:
 print_24:
 	subsd xmm14, xmm15	;prayer timestamp - start_of_day
 	SEC_TO_HM xmm14
+	PRINT_EXIT
+
+print_12:
+	subsd xmm14, xmm15	;prayer timestamp - start_of_day
+	SEC_TO_HM xmm14
+	cmp	r8, 0xc
+	ja	sub12h
+	PRINT_EXIT
+
+sub12h:
+	sub	r8, 0xc
 	PRINT_EXIT
 
 ;	result_hour	;r8
