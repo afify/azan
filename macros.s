@@ -12,7 +12,7 @@
 %define MAX_ARGC	2
 
 section .rodata
-	usage_msg:	db "usage: azan-nasm [-uv]", 10, 0
+	usage_msg:	db "usage: azan-nasm [-nuv]", 10, 0
 	usage_len:	equ $ - usage_msg
 	version_msg:	db "azan-nasm-", VERSION, 10, 0
 	version_len:	equ $ - version_msg
@@ -55,63 +55,7 @@ section .note.openbsd.ident note
 	EEXIT EXIT_SUCCESS
 %endmacro
 
-%macro ACOS 1	;acos(x) = atan(sqrt((1-x*x)/(x*x)))
-	movsd	[tmp0], %1
-	fld    qword [tmp0]
-	fld    st0
-	fmul   st0, st1
-	fld1
-	fsubrp st1, st0
-	fsqrt
-	fxch
-	fpatan
-	fstp	qword [tmp0]
-	movsd	%1, [tmp0]
-%endmacro
-
-%macro ASIN 1	;asin(x) = atan(sqrt(x*x/(1-x*x)))
-	movsd	[tmp0], %1
-	fld    qword [tmp0]
-	fld    st0
-	fmul   st0, st1
-	fld1
-	fsubrp st1, st0
-	fsqrt
-	fpatan
-	fstp	qword [tmp0]
-	movsd	%1, [tmp0]
-%endmacro
-
-%macro COS 1
-	movsd	[tmp0], %1
-	fld	qword [tmp0]
-	fcos
-	fstp	qword [tmp0]
-	movsd	%1, [tmp0]
-%endmacro
-
-%macro SIN 1
-	movsd	[tmp0], %1
-	fld	qword [tmp0]
-	fsin
-	fstp	qword [tmp0]
-	movsd	%1, [tmp0]
-%endmacro
-
-%macro ATAN2 2
-	movsd	[tmp0], %1
-	movsd	[tmp1], %2
-	fld	qword [tmp0]	;x
-	fld	qword [tmp1]	;y
-	fpatan
-	fstp	qword [tmp0]
-	movsd	%1, [tmp0]
-%endmacro
-
-%macro CALC_DIFF 1
-	; diff = prayer time - tstamp
-	subsd	%1, xmm6
-
+%macro SEC_TO_HM 1
 	;hours = floor(diff / sec_inhour) = xmm15
 	movsd	xmm15, %1
 	divsd	xmm15, [sec_inhour]
