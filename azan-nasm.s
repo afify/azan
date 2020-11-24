@@ -46,18 +46,21 @@ _start:
 	pop	rcx
 	cmp	rcx, MAX_ARGC
 	jl	get_timestamp
-	je	die_version
+	je	check_argv
 
 die_usage:
 	DIE	usage_msg, usage_len
 
-die_version:
-	mov	rcx, [rsp+8]		;argv
-	cmp	[rcx], byte '-'
+check_argv:
+	mov	r11, [rsp+8]	;argv
+	cmp	[r11], byte 0x2d	;-
 	jne	die_usage
-	cmp	[rcx+1], byte 'v'
+	cmp	[r11+2], byte 0x00
 	jne	die_usage
-	cmp	[rcx+2], byte 0
+	mov	r12b, [r11+1]
+	cmp	r12b, 0x75	;u
+	je	get_timestamp
+	cmp	r12b, 0x76	;v
 	jne	die_usage
 	DIE	version_msg, version_len
 
@@ -282,33 +285,54 @@ get_nfajr:	;fajr + sec_inday
 
 print_nfajr:
 	mov	[res_msg], byte 'F'
+	movsd	xmm14, xmm12
+	cmp	r12b, byte 'u'
+	je	print_unix
 	CALC_DIFF xmm12
 	PRINT_EXIT
 
 print_fajr:
 	mov	[res_msg], byte 'F'
+	movsd	xmm14, xmm3
+	cmp	r12b, byte 'u'
+	je	print_unix
 	CALC_DIFF xmm3
 	PRINT_EXIT
 
 print_duhr:
 	mov	[res_msg], byte 'D'
+	movsd	xmm14, xmm0
+	cmp	r12b, byte 'u'
+	je	print_unix
 	CALC_DIFF xmm0
 	PRINT_EXIT
 
 print_asr:
 	mov	[res_msg], byte 'A'
+	movsd	xmm14, xmm4
+	cmp	r12b, byte 'u'
+	je	print_unix
 	CALC_DIFF xmm4
 	PRINT_EXIT
 
 print_maghrib:
 	mov	[res_msg], byte 'M'
+	movsd	xmm14, xmm5
+	cmp	r12b, byte 'u'
+	je	print_unix
 	CALC_DIFF xmm5
 	PRINT_EXIT
 
 print_isha:
 	mov	[res_msg], byte 'I'
+	movsd	xmm14, xmm7
+	cmp	r12b, byte 'u'
+	je	print_unix
 	CALC_DIFF xmm7
 	PRINT_EXIT
+
+print_unix:
+	PRINT_INT	;from xmm14
 
 ;	result_hour	;r8
 ;	result_min	;r9

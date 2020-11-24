@@ -12,7 +12,7 @@
 %define MAX_ARGC	2
 
 section .rodata
-	usage_msg:	db "usage: azan-nasm [-v]", 10, 0
+	usage_msg:	db "usage: azan-nasm [-uv]", 10, 0
 	usage_len:	equ $ - usage_msg
 	version_msg:	db "azan-nasm-", VERSION, 10, 0
 	version_len:	equ $ - version_msg
@@ -195,6 +195,32 @@ section .note.openbsd.ident note
 
 	;T = p1 * p5 = %1
 	mulsd	%1, [p1]
+%endmacro
+
+%macro PRINT_INT 0
+	nop
+	mov	rsi, tmp0+11	; pointer to the end of decimal number
+	mov	byte [rsi], 0xa	; add '\n'
+	cvttsd2si rax, 	xmm14	; convert double to int
+	mov	rbx, 0xa        ; hex number will divide to 10
+	mov	rcx, 1          ; decimal number length + '\n'
+
+next_digit:
+	inc	rcx             ; calculate output length
+	xor	rdx, rdx        ; remainder storage should be 0 before divide
+	div	rbx             ; divide hex number to 10
+	add	rdx, 0x30       ; calculate ascii code of remainder
+	dec	rsi             ; calculate decimal digit place
+	mov	[rsi], dl       ; put decimal digit into string
+	cmp	rax, 0          ; is there hex digits any more?
+	jnz	next_digit
+
+	;print
+	mov	rax, SYS_write	; system call number (sys_write)
+	mov	rdi, STDOUT     ; first argument:  file handle (stdout)
+	mov	rdx, rcx        ; second argument: pointer to string
+	syscall
+	EEXIT	EXIT_SUCCESS
 %endmacro
 
 %endif ;MACROS_S
