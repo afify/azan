@@ -2,6 +2,9 @@ azan-nasm
 =========
 **prayers time calculator, written in nasm.**
 
+- binary size ≈ 8.8 kb
+- instructions ≈ 250-400
+- branches ≈ 6-20
 - standalone nasm
 - unix portable syscalls
 - tested on Linux and OpenBSD
@@ -34,8 +37,16 @@ $ azan-nasm
 Options
 -------
 ```sh
+$ azan-nasm [-Nnuv]
 $ man azan-nasm
 ```
+| option | description                                  |
+|:------:|:---------------------------------------------|
+| `-N`   | print next prayer time, 12-hour clock format.|
+| `-n`   | print next prayer time, 24-hour clock format.|
+| `-u`   | print next prayer time, unix-time format.    |
+| `-v`   | print version.                               |
+
 
 Configuration
 -------------
