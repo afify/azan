@@ -37,11 +37,12 @@ $ azan-nasm
 Options
 -------
 ```sh
-$ azan-nasm [-Nnuv]
+$ azan-nasm [-aNnUuv]
 $ man azan-nasm
 ```
 | option | description                                  |
 |:------:|:---------------------------------------------|
+| `-a`   | print all prayers time, 24-hour clock format.|
 | `-N`   | print next prayer time, 12-hour clock format.|
 | `-n`   | print next prayer time, 24-hour clock format.|
 | `-U`   | print all prayers time, unix-time format.    |

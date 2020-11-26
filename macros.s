@@ -35,14 +35,13 @@ section .note.openbsd.ident note
 	EEXIT EXIT_FAILURE
 %endmacro
 
-%macro PRINT_EXIT 0
+%macro PRINT_HM 0
 	SET_MSG
 	mov rax, SYS_write
 	mov rdi, STDOUT
 	mov rsi, res_msg
 	mov rdx, res_len
 	syscall
-	EEXIT EXIT_SUCCESS
 %endmacro
 
 %macro SEC_TO_HM 1
@@ -168,7 +167,8 @@ next_digit:
 	je	print_12
 	subsd	%1, xmm6	;print diff = prayer time - tstamp = %1
 	SEC_TO_HM %1
-	PRINT_EXIT
+	PRINT_HM
+	EEXIT EXIT_SUCCESS
 %endmacro
 
 %endif ;MACROS_S
