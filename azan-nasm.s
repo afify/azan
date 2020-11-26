@@ -303,66 +303,23 @@ print_nfajr:
 
 print_fajr:
 	mov	[res_msg], byte 'F'
-	movsd	xmm14, xmm3
-	cmp	r12b, byte 'u'
-	je	print_unix
-	cmp	r12b, byte 'n'
-	je	print_24
-	cmp	r12b, byte 'N'
-	je	print_12
-	subsd xmm3, xmm6	;diff = prayer time - tstamp = xmm3
-	SEC_TO_HM xmm3
-	PRINT_EXIT
+	PRINT_FLAG xmm3
 
 print_duhr:
 	mov	[res_msg], byte 'D'
-	movsd	xmm14, xmm0
-	cmp	r12b, byte 'u'
-	je	print_unix
-	cmp	r12b, byte 'n'
-	je	print_24
-	subsd xmm0, xmm6	;diff = prayer time - tstamp = xmm0
-	SEC_TO_HM xmm0
-	PRINT_EXIT
+	PRINT_FLAG xmm0
 
 print_asr:
 	mov	[res_msg], byte 'A'
-	movsd	xmm14, xmm4
-	cmp	r12b, byte 'u'
-	je	print_unix
-	cmp	r12b, byte 'n'
-	je	print_24
-	cmp	r12b, byte 'N'
-	je	print_12
-	subsd xmm4, xmm6	;diff = prayer time - tstamp = xmm4
-	SEC_TO_HM xmm4
-	PRINT_EXIT
+	PRINT_FLAG xmm4
 
 print_maghrib:
 	mov	[res_msg], byte 'M'
-	movsd	xmm14, xmm5
-	cmp	r12b, byte 'u'
-	je	print_unix
-	cmp	r12b, byte 'n'
-	je	print_24
-	cmp	r12b, byte 'N'
-	je	print_12
-	subsd xmm5, xmm6	;diff = prayer time - tstamp = xmm5
-	SEC_TO_HM xmm5
-	PRINT_EXIT
+	PRINT_FLAG xmm5
 
 print_isha:
 	mov	[res_msg], byte 'I'
-	movsd	xmm14, xmm7
-	cmp	r12b, byte 'u'
-	je	print_unix
-	cmp	r12b, byte 'n'
-	je	print_24
-	cmp	r12b, byte 'N'
-	je	print_12
-	subsd xmm7, xmm6	;diff = prayer time - tstamp = xmm7
-	SEC_TO_HM xmm7
-	PRINT_EXIT
+	PRINT_FLAG xmm7
 
 print_unix:
 	PRINT_INT	;from xmm14

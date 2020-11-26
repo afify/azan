@@ -167,4 +167,17 @@ next_digit:
 	EEXIT	EXIT_SUCCESS
 %endmacro
 
+%macro PRINT_FLAG 1
+	movsd	xmm14, %1	;copy prayer to xmm14
+	cmp	r12b, byte 'u'
+	je	print_unix
+	cmp	r12b, byte 'n'
+	je	print_24
+	cmp	r12b, byte 'N'
+	je	print_12
+	subsd	%1, xmm6	;print diff = prayer time - tstamp = %1
+	SEC_TO_HM %1
+	PRINT_EXIT
+%endmacro
+
 %endif ;MACROS_S
