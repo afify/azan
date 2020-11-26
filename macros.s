@@ -11,16 +11,6 @@
 %define ROUND_DOWN	01B ;toward -inf
 %define MAX_ARGC	2
 
-section .rodata
-	usage_msg:	db "usage: azan-nasm [-Nnuv]", 10, 0
-	usage_len:	equ $ - usage_msg
-	version_msg:	db "azan-nasm-", VERSION, 10, 0
-	version_len:	equ $ - version_msg
-
-section .data
-	res_msg:	db "X XX:XX", 10, 0
-	res_len:	equ $ - res_msg
-
 %macro CHECK_OPENBSD 0
 %ifdef OpenBSD
 section .note.openbsd.ident note
@@ -141,13 +131,21 @@ section .note.openbsd.ident note
 	mulsd	%1, [p1]
 %endmacro
 
-%macro PRINT_INT 0
+%macro PRINT_INT 1
 	nop
 	mov	rsi, tmp0+11	; pointer to the end of decimal number
 	mov	byte [rsi], 0xa	; add '\n'
-	cvttsd2si rax, 	xmm14	; convert double to int
+	cvttsd2si rax, 	%1	; convert double to int
 	mov	rbx, 0xa        ; hex number will divide to 10
 	mov	rcx, 1          ; decimal number length + '\n'
+	call next_digit
+
+	;print
+	mov	rax, SYS_write	; system call number (sys_write)
+	mov	rdi, STDOUT     ; first argument:  file handle (stdout)
+	mov	rdx, rcx        ; second argument: pointer to string
+	syscall
+%endmacro
 
 next_digit:
 	inc	rcx             ; calculate output length
@@ -158,14 +156,7 @@ next_digit:
 	mov	[rsi], dl       ; put decimal digit into string
 	cmp	rax, 0          ; is there hex digits any more?
 	jnz	next_digit
-
-	;print
-	mov	rax, SYS_write	; system call number (sys_write)
-	mov	rdi, STDOUT     ; first argument:  file handle (stdout)
-	mov	rdx, rcx        ; second argument: pointer to string
-	syscall
-	EEXIT	EXIT_SUCCESS
-%endmacro
+	ret
 
 %macro PRINT_FLAG 1
 	movsd	xmm14, %1	;copy prayer to xmm14

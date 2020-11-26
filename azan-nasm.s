@@ -35,6 +35,14 @@ section .rodata
 	maghrib_2:	dq 0x3feaaaaaaaaaaaab	;double 0.833333333333333333
 	isha_nor:	dq 0x40b5180000000000	;double 5400.0 90 min
 	isha_ram:	dq 0x40bc200000000000	;double 7200.0 120 min
+	usage_msg:	db "usage: azan-nasm [-NnUuv]", 10, 0
+	usage_len:	equ $ - usage_msg
+	version_msg:	db "azan-nasm-", VERSION, 10, 0
+	version_len:	equ $ - version_msg
+
+section .data
+	res_msg:	db "X XX:XX", 10, 0
+	res_len:	equ $ - res_msg
 
 section .bss
 	tmp0:	resq 1
@@ -59,6 +67,8 @@ check_argv:
 	cmp	[r11+2], byte 0x00
 	jne	die_usage
 	mov	r12b, [r11+1]
+	cmp	r12b, 0x55	;U
+	je	get_timestamp
 	cmp	r12b, 0x75	;u
 	je	get_timestamp
 	cmp	r12b, 0x6e	;n
@@ -204,6 +214,8 @@ test_duhr:
 	mulsd	xmm0, [sec_inhour]	;convert to seconds
 	roundsd	xmm0, xmm0, ROUND_DOWN
 	addsd	xmm0, xmm15		;duhr seconds + start_of_day
+	cmp r12b, byte 'U'
+	je get_asr
 	ucomisd	xmm0, xmm6		;if duhr > tstamp
 	jae	print_duhr
 
@@ -240,6 +252,8 @@ test_asr:
 	mulsd	xmm4, [sec_inhour]	;convert to seconds
 	roundsd	xmm4, xmm4, ROUND_DOWN
 	addsd	xmm4, xmm15		;asr seconds + start_of_day
+	cmp r12b, byte 'U'
+	je get_maghrib
 	ucomisd	xmm4, xmm6		;if asr > tstamp
 	jae	print_asr
 
@@ -254,6 +268,8 @@ test_maghrib:
 	mulsd	xmm5, [sec_inhour]	;convert to seconds
 	roundsd	xmm5, xmm5, ROUND_DOWN
 	addsd	xmm5, xmm15		;maghrib seconds + start_of_day
+	cmp r12b, byte 'U'
+	je get_isha
 	ucomisd	xmm5, xmm6		;if maghrib > tstamp
 	jae	print_maghrib
 
@@ -281,6 +297,8 @@ calc_isha_nor:	;duhr + T(isha_angle, D);
 	NORM	xmm7, [pray_1]
 
 test_isha:
+	cmp	r12b, byte 'U'
+	je	print_all_u
 	ucomisd	xmm7, xmm6	;if isha > tstamp
 	jae	print_isha
 
@@ -322,7 +340,8 @@ print_isha:
 	PRINT_FLAG xmm7
 
 print_unix:
-	PRINT_INT	;from xmm14
+	PRINT_INT	xmm14
+	EEXIT		EXIT_SUCCESS
 
 print_24:
 	subsd xmm14, xmm15	;prayer timestamp - start_of_day
@@ -339,6 +358,14 @@ print_12:
 sub12h:
 	sub	r8, 0xc
 	PRINT_EXIT
+
+print_all_u:
+	PRINT_INT	xmm3	;fajr
+	PRINT_INT	xmm0	;duhr
+	PRINT_INT	xmm4	;asr
+	PRINT_INT	xmm5	;maghrib
+	PRINT_INT	xmm7	;isha
+	EEXIT		EXIT_SUCCESS
 
 ;	result_hour	;r8
 ;	result_min	;r9
