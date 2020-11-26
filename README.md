@@ -1,4 +1,4 @@
-azan-nasm
+azan
 =========
 **prayers time calculator, written in nasm.**
 
@@ -17,28 +17,28 @@ Installation
 
 **current**
 ```sh
-git clone https://github.com/afify/azan-nasm.git
-cd azan-nasm/
+git clone https://github.com/afify/azan.git
+cd azan/
 make
 make install
 ```
 **latest release**
 ```sh
-wget --content-disposition $(curl -s https://api.github.com/repos/afify/azan-nasm/releases/latest | tr -d '",' | awk '/tag_name/ {print "https://github.com/afify/azan-nasm/archive/"$2".tar.gz"}')
-tar -xzf azan-nasm-*.tar.gz && cd azan-nasm-*/
+wget --content-disposition $(curl -s https://api.github.com/repos/afify/azan/releases/latest | tr -d '",' | awk '/tag_name/ {print "https://github.com/afify/azan/archive/"$2".tar.gz"}')
+tar -xzf azan-*.tar.gz && cd azan-*/
 make
 make install
 ```
 Run
 ---
 ```sh
-$ azan-nasm
+$ azan
 ```
 Options
 -------
 ```sh
-$ azan-nasm [-aNnUuv]
-$ man azan-nasm
+$ azan [-aNnUuv]
+$ man azan
 ```
 | option | description                                  |
 |:------:|:---------------------------------------------|
@@ -52,5 +52,5 @@ $ man azan-nasm
 
 Configuration
 -------------
-The configuration of azan-nasm is done by creating a custom config.s
+The configuration of azan is done by creating a custom config.s
 and (re)compiling the source code.

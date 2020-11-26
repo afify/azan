@@ -1,9 +1,9 @@
-# azan-nasm
+# azan
 # See LICENSE file for copyright and license details.
 
 include config.mk
 
-BIN = azan-nasm
+BIN = azan
 SRC = ${BIN}.s
 OBJ = ${SRC:.s=.o}
 

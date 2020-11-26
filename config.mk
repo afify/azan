@@ -1,4 +1,4 @@
-# azan-nasm version
+# azan version
 VERSION = 0.1
 
 # paths

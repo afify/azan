@@ -1,5 +1,5 @@
 ; See LICENSE file for copyright and license details.
-; azan-nasm is simple muslim prayers calculator.
+; azan is simple muslim prayers calculator.
 ; print next prayer left duration or today's all prayers.
 
 BITS 64
@@ -35,9 +35,9 @@ section .rodata
 	maghrib_2:	dq 0x3feaaaaaaaaaaaab	;double 0.833333333333333333
 	isha_nor:	dq 0x40b5180000000000	;double 5400.0 90 min
 	isha_ram:	dq 0x40bc200000000000	;double 7200.0 120 min
-	usage_msg:	db "usage: azan-nasm [-aNnUuv]", 10, 0
+	usage_msg:	db "usage: azan [-aNnUuv]", 10, 0
 	usage_len:	equ $ - usage_msg
-	version_msg:	db "azan-nasm-", VERSION, 10, 0
+	version_msg:	db "azan-", VERSION, 10, 0
 	version_len:	equ $ - version_msg
 
 section .data
