@@ -37,11 +37,12 @@ $ azan
 Options
 -------
 ```sh
-$ azan [-aNnUuv]
+$ azan [-AaNnUuv]
 $ man azan
 ```
 | option | description                                  |
 |:------:|:---------------------------------------------|
+| `-A`   | print all prayers time, 12-hour clock format.|
 | `-a`   | print all prayers time, 24-hour clock format.|
 | `-N`   | print next prayer time, 12-hour clock format.|
 | `-n`   | print next prayer time, 24-hour clock format.|

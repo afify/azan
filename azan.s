@@ -35,7 +35,7 @@ section .rodata
 	maghrib_2:	dq 0x3feaaaaaaaaaaaab	;double 0.833333333333333333
 	isha_nor:	dq 0x40b5180000000000	;double 5400.0 90 min
 	isha_ram:	dq 0x40bc200000000000	;double 7200.0 120 min
-	usage_msg:	db "usage: azan [-aNnUuv]", 10, 0
+	usage_msg:	db "usage: azan [-AaNnUuv]", 10, 0
 	usage_len:	equ $ - usage_msg
 	version_msg:	db "azan-", VERSION, 10, 0
 	version_len:	equ $ - version_msg
@@ -67,6 +67,8 @@ check_argv:
 	cmp	[r11+2], byte 0x00
 	jne	die_usage
 	mov	r12b, [r11+1]
+	cmp	r12b, 0x41	;A
+	je	get_timestamp
 	cmp	r12b, 0x61	;a
 	je	get_timestamp
 	cmp	r12b, 0x55	;U
@@ -212,6 +214,8 @@ test_fajr:
 	je	test_duhr
 	cmp	r12b, byte 'a'
 	je	test_duhr
+	cmp	r12b, byte 'A'
+	je	test_duhr
 	ucomisd	xmm3, xmm6		;if fajr > tstamp
 	jae	print_fajr
 
@@ -223,6 +227,8 @@ test_duhr:
 	cmp	r12b, byte 'U'
 	je	get_asr
 	cmp	r12b, byte 'a'
+	je	get_asr
+	cmp	r12b, byte 'A'
 	je	get_asr
 	ucomisd	xmm0, xmm6		;if duhr > tstamp
 	jae	print_duhr
@@ -264,6 +270,8 @@ test_asr:
 	je	get_maghrib
 	cmp	r12b, byte 'a'
 	je	get_maghrib
+	cmp	r12b, byte 'A'
+	je	get_maghrib
 	ucomisd	xmm4, xmm6		;if asr > tstamp
 	jae	print_asr
 
@@ -281,6 +289,8 @@ test_maghrib:
 	cmp	r12b, byte 'U'
 	je	get_isha
 	cmp	r12b, byte 'a'
+	je	get_isha
+	cmp	r12b, byte 'A'
 	je	get_isha
 	ucomisd	xmm5, xmm6		;if maghrib > tstamp
 	jae	print_maghrib
@@ -313,6 +323,8 @@ test_isha:
 	je	print_all_u
 	cmp	r12b, byte 'a'
 	je	print_all_24
+	cmp	r12b, byte 'A'
+	je	print_all_12
 	ucomisd	xmm7, xmm6	;if isha > tstamp
 	jae	print_isha
 
@@ -374,8 +386,7 @@ print_12:
 
 sub12h:
 	sub	r8, 0xc
-	PRINT_HM
-	EEXIT	EXIT_SUCCESS
+	ret
 
 print_all_u:
 	PRINT_INT	xmm3	;fajr
@@ -410,6 +421,40 @@ print_all_24:
 	subsd		xmm7, xmm15	;prayer timestamp - start_of_day
 	SEC_TO_HM	xmm7
 	PRINT_HM
+	EEXIT		EXIT_SUCCESS
+
+print_all_12:
+	mov		[res_msg], byte 'F'
+	subsd		xmm3, xmm15	;prayer timestamp - start_of_day
+	SEC_TO_HM	xmm3
+	PRINT_HM
+
+	mov		[res_msg], byte 'D'
+	subsd		xmm0, xmm15	;prayer timestamp - start_of_day
+	SEC_TO_HM	xmm0
+	PRINT_HM
+
+	mov		[res_msg], byte 'A'
+	subsd		xmm4, xmm15	;prayer timestamp - start_of_day
+	SEC_TO_HM	xmm4
+	cmp		r8, 0xc
+	call		sub12h
+	PRINT_HM
+
+	mov		[res_msg], byte 'M'
+	subsd		xmm5, xmm15	;prayer timestamp - start_of_day
+	SEC_TO_HM	xmm5
+	cmp		r8, 0xc
+	call		sub12h
+	PRINT_HM
+
+	mov		[res_msg], byte 'I'
+	subsd		xmm7, xmm15	;prayer timestamp - start_of_day
+	SEC_TO_HM	xmm7
+	cmp		r8, 0xc
+	call		sub12h
+	PRINT_HM
+	EEXIT	EXIT_SUCCESS
 
 ;	result_hour	;r8
 ;	result_min	;r9
@@ -428,5 +473,3 @@ print_all_24:
 ;	duhr:		;xmm13
 ;	macros:		;xmm14
 ;	start_of_day:	;xmm15
-
-	EEXIT	EXIT_SUCCESS
