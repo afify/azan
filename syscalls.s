@@ -11,6 +11,16 @@
 	%define SYS_exit 1
 	%define SYS_write 4
 	%define SYS_gettimeofday 67
+%elifdef FreeBSD
+	%define SYS_exit 1
+	%define SYS_write 4
+	%define SYS_gettimeofday 116
+%elifdef NetBSD
+	%define SYS_exit 1
+	%define SYS_write 4
+	%define SYS_gettimeofday 116
+%else
+	%fatal "OS not supported"
 %endif
 
 %endif ;SYSCALLS_S

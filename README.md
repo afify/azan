@@ -2,12 +2,12 @@ azan
 =========
 **prayers time calculator, written in nasm.**
 
-- binary size ≈ 8.8 kb
-- instructions ≈ 250-400
-- branches ≈ 6-20
 - standalone nasm
 - unix portable syscalls
-- tested on Linux and OpenBSD
+- tested on Linux, OpenBSD, FreeBSD and NetBSD
+- binary size ≈ 7 kb
+- instructions ≈ 250-400
+- branches ≈ 6-20
 
 Installation
 ------------

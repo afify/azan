@@ -11,11 +11,16 @@
 %define ROUND_DOWN	01B ;toward -inf
 %define MAX_ARGC	2
 
-%macro CHECK_OPENBSD 0
+%macro CHECK_BSD 0
 %ifdef OpenBSD
 section .note.openbsd.ident note
 	dd 8, 4, 1
 	db "OpenBSD", 0
+	dd 0
+%elifdef NetBSD
+section .note.openbsd.ident note
+	dd 7, 4, 1
+	db "NetBSD", 0, 0
 	dd 0
 %endif
 %endmacro

@@ -7,7 +7,7 @@ BITS 64
 %include "macros.s"
 %include "math.s"
 %include "config.s"
-CHECK_OPENBSD
+CHECK_BSD
 
 section .rodata
 	sec_inday:	dq 0x40f5180000000000	;double 86400.0
