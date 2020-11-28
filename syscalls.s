@@ -11,6 +11,7 @@
 	%define SYS_exit 1
 	%define SYS_write 4
 	%define SYS_gettimeofday 67
+	%define SYS_pledge 108
 %elifdef FreeBSD
 	%define SYS_exit 1
 	%define SYS_write 4

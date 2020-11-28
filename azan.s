@@ -39,6 +39,8 @@ section .rodata
 	usage_len:	equ $ - usage_msg
 	version_msg:	db "azan-", VERSION, 10, 0
 	version_len:	equ $ - version_msg
+	pledge_msg:	db "pledge", 10, 0
+	promises:	db "stdio", 0
 
 section .data
 	res_msg:	db "X XX:XX", 10, 0
@@ -84,6 +86,7 @@ check_argv:
 	DIE	version_msg, version_len
 
 get_timestamp:
+	OPENBSD_PLEDGE
 	mov	rax, SYS_gettimeofday	;sys_gettimeofday(
 	mov	rdi, tmp0		;struct timeval *tv,
 	mov	rsi, rsi		;struct timezone* tz
@@ -456,6 +459,8 @@ print_all_12:
 	PRINT_HM
 	EEXIT	EXIT_SUCCESS
 
+die_pledge:
+	DIE	pledge_msg, 8
 ;	result_hour	;r8
 ;	result_min	;r9
 ;	duhr_ts:	;xmm0

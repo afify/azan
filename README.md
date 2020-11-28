@@ -5,6 +5,7 @@ azan
 - standalone nasm
 - unix portable syscalls
 - tested on Linux, OpenBSD, FreeBSD and NetBSD
+- OpenBSD pledge.
 - binary size ≈ 7 kb
 - instructions ≈ 250-400
 - branches ≈ 6-20

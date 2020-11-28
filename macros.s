@@ -25,6 +25,17 @@ section .note.openbsd.ident note
 %endif
 %endmacro
 
+%macro OPENBSD_PLEDGE 0
+%ifdef OpenBSD
+	mov	rax, SYS_pledge	;pledge(
+	mov	rdi, promises	;const char *promises
+	xor	rsi, rsi	;const char *execpromises
+	syscall
+	cmp	rax, 0
+	jl	die_pledge
+%endif
+%endmacro
+
 %macro EEXIT 1
 	mov rax, SYS_exit
 	mov rdi, %1
