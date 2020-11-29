@@ -383,13 +383,12 @@ print_12:
 	subsd		xmm14, xmm15	;prayer timestamp - start_of_day
 	SEC_TO_HM	xmm14
 	cmp		r8, 0xc
-	ja		sub12h
+	jle		print_exit
+	sub	r8, 0xc
+
+print_exit:
 	PRINT_HM
 	EEXIT		EXIT_SUCCESS
-
-sub12h:
-	sub	r8, 0xc
-	ret
 
 print_all_u:
 	PRINT_INT	xmm3	;fajr
@@ -440,22 +439,19 @@ print_all_12:
 	mov		[res_msg], byte 'A'
 	subsd		xmm4, xmm15	;prayer timestamp - start_of_day
 	SEC_TO_HM	xmm4
-	cmp		r8, 0xc
-	call		sub12h
+	sub		r8, 0xc
 	PRINT_HM
 
 	mov		[res_msg], byte 'M'
 	subsd		xmm5, xmm15	;prayer timestamp - start_of_day
 	SEC_TO_HM	xmm5
-	cmp		r8, 0xc
-	call		sub12h
+	sub		r8, 0xc
 	PRINT_HM
 
 	mov		[res_msg], byte 'I'
 	subsd		xmm7, xmm15	;prayer timestamp - start_of_day
 	SEC_TO_HM	xmm7
-	cmp		r8, 0xc
-	call		sub12h
+	sub		r8, 0xc
 	PRINT_HM
 	EEXIT	EXIT_SUCCESS
 
