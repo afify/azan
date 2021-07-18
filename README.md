@@ -18,14 +18,14 @@ Installation
 
 **current**
 ```sh
-git clone https://github.com/afify/azan.git
+git clone git://git.afify.dev/azan
 cd azan/
 make
 make install
 ```
 **latest release**
 ```sh
-wget --content-disposition $(curl -s https://api.github.com/repos/afify/azan/releases/latest | tr -d '",' | awk '/tag_name/ {print "https://github.com/afify/azan/archive/"$2".tar.gz"}')
+wget $(curl -s https://git.afify.dev/azan/tags.xml | grep --color=never -m 1 -o "\[v.*\]" | tr -d '[]' | awk '{print "https://git.afify.dev/azan/releases/azan-"$1".tar.gz"}')
 tar -xzf azan-*.tar.gz && cd azan-*/
 make
 make install
